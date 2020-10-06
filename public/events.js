@@ -48,11 +48,12 @@ document.getElementById("downvote").addEventListener("click", async (event) => {
 	updateScore(response);
 });
 
+
 // HANDLE COMMENT SUBMISSION EVENT //
 document.getElementById("submit").addEventListener("click", async (event) => {
 	event.preventDefault();
 	const form = new FormData(document.querySelector(".comment-form"));
-	const comment = form.get("user-comment");
+  const comment = form.get("user-comment");
 	const response = await fetch("/kitten/comments", {
 		method: "POST",
 		headers: {
@@ -60,20 +61,11 @@ document.getElementById("submit").addEventListener("click", async (event) => {
 		},
 		body: JSON.stringify({ comment }),
 	});
-	const json = await response.json();
+  const json = await response.json();
 
 	try {
 		if (!response.ok) throw Error(json);
-		const commentBlock = document.querySelector(".comments");
-
-		let comment = json.comments[json.comments.length - 1];
-		let currComm = document.createElement("div");
-		let delButton = document.createElement("button");
-		delButton.setAttribute("class", "delete");
-		delButton.innerText = "delete comment";
-		currComm.innerHTML = comment + " ";
-		currComm.appendChild(delButton);
-		commentBlock.appendChild(currComm);
+    renderComments(json);
 	} catch (e) {
 		let comment = document.createElement("p");
 		comment.innerHTML = "something bad happened";
@@ -81,14 +73,43 @@ document.getElementById("submit").addEventListener("click", async (event) => {
 	}
 });
 
-// COMMENT DELETION //
 
+// ADD DELETE BUTTON HELPER FUNCTION //
+function addDeleteButton(node, i) {
+  let delButton = document.createElement("button");
+  delButton.setAttribute("class", "delete");
+  delButton.setAttribute('id', `${i}`)
+  delButton.innerText = "delete comment";
+  node.appendChild(delButton);
+}
+
+
+// ADD COMMENT RENDERING HELPER FUNCTION //
+function renderComments(json) {
+  const commentBlock = document.querySelector(".comments");
+  commentBlock.innerHTML = '';
+
+  json.comments.forEach((comment, i) => {
+    let currComm = document.createElement("div");
+    currComm.innerHTML = comment + " ";
+    addDeleteButton(currComm, i)
+    commentBlock.appendChild(currComm);
+  })
+}
+
+
+// COMMENT DELETION LISTENER //
 document.querySelector(".comments").addEventListener('click', async(event) =>{
     if(event.target.tagName === "BUTTON"){
-      console.log(event.target.parentNode.innerText)
-      let response = await fetch('/kitten/comments/:id', {
-        method: "DELETE",
-        // body: JSON.stringify({event.target.parentNode.innerText})
+      let id = event.target.id
+      let response = await fetch("/kitten/comments/:id", {
+        method: 'DELETE',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id })
       });
+      let json = await response.json();
+      renderComments(json);
     }
 })
